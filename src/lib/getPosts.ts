@@ -1,5 +1,6 @@
 import { GitHubFile, PostMetadata } from "@/types";
 import matter from "gray-matter";
+import yaml from "js-yaml";
 
 export async function getPosts(): Promise<
   { slug: string; metadata: PostMetadata; content: string }[]
@@ -22,7 +23,13 @@ export async function getPosts(): Promise<
         .map(async (file) => {
           const contentRes = await fetch(file.download_url);
           const raw = await contentRes.text();
-          const { data, content } = matter(raw);
+          
+          // 🔒 GÜVENLİK: YAML deserialization attack'leri için safe parsing
+          const { data, content } = matter(raw, {
+            engines: {
+              yaml: (s: string) => yaml.load(s, { schema: yaml.SAFE_SCHEMA })
+            }
+          });
 
           const metadata = data as PostMetadata;
 

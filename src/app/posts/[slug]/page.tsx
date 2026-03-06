@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import matter from "gray-matter";
+import yaml from "js-yaml";
 import ReactMarkdown from "react-markdown";
 import { GitHubFile, PostMetadata } from "@/types";
 import type { Metadata as NextMetadata } from "next";
@@ -81,7 +82,13 @@ async function getPostBySlug(
     if (!res.ok) return null;
 
     const raw = await res.text();
-    const { data, content } = matter(raw);
+    
+    // 🔒 GÜVENLİK: YAML deserialization attack'leri için safe parsing
+    const { data, content } = matter(raw, {
+      engines: {
+        yaml: (s: string) => yaml.load(s, { schema: yaml.SAFE_SCHEMA })
+      }
+    });
     const metadata = data as PostMetadata;
 
     if (!metadata.title || !metadata.date || !metadata.excerpt) {
